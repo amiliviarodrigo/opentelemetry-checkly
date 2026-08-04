@@ -1,5 +1,5 @@
 import { ApiCheck, AssertionBuilder } from 'checkly/constructs'
-import { BASE_URL, BUILD_TIME_URL } from './env'
+import { BASE_URL, BUILD_TIME_URL } from '../env'
 
 // A fresh session ID always returns an empty cart, no error - this just
 // checks the endpoint is up and responding correctly.

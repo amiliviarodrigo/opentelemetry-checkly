@@ -1,5 +1,5 @@
 import { ApiCheck, AssertionBuilder } from 'checkly/constructs'
-import { BASE_URL } from './env'
+import { BASE_URL } from '../env'
 
 // Shipping cost only depends on item count, not the product or address, so
 // a placeholder item is fine here.

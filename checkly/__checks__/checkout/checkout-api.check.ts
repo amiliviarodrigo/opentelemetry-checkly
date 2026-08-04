@@ -1,5 +1,5 @@
 import { ApiCheck, AssertionBuilder } from 'checkly/constructs'
-import { BASE_URL } from './env'
+import { BASE_URL } from '../env'
 
 // Note: this places a real order every run. A production version of this
 // check would also delete the order afterward - not possible here, this
