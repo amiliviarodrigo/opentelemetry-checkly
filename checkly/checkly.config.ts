@@ -16,11 +16,10 @@ const config = defineConfig({
   checks: {
     /* A default for how often your Check should run in minutes */
     frequency: 10,
-    /* Checkly data centers to run your Checks as monitors.
-     * TODO: once the Private Location (see PLAN.md, reachability) is set up,
-     * checks against the local app should run from that private location
-     * instead of/alongside these public ones. */
-    locations: ['us-east-1', 'eu-central-1'],
+    /* The app only runs locally and isn't publicly reachable, so checks run
+     * from the Private Location agent (see compose.checkly-agent.yaml)
+     * instead of Checkly's public data centers. */
+    privateLocations: ['opentelemetry-checkly-local'],
     /* An optional array of tags to organize your Checks */
     tags: ['astronomy-shop'],
     /** The Checkly Runtime identifier, determining npm packages and the Node.js version available at runtime.
@@ -47,8 +46,10 @@ const config = defineConfig({
     },
   },
   cli: {
-    /* The default datacenter location to use when running npx checkly test */
-    runLocation: 'eu-central-1',
+    /* The app only runs locally via the Private Location agent, so
+     * ad-hoc `checkly test`/`trigger` runs should default there too,
+     * instead of a public datacenter, when no --location flag is given. */
+    privateRunLocation: 'opentelemetry-checkly-local',
     /* An array of default reporters to use when a reporter is not specified with the "--reporter" flag */
     reporters: ['list'],
     /* How many times to retry a failing test run when running `npx checkly test` or `npx checkly trigger` (max. 3) */
