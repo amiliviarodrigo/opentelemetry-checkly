@@ -1,11 +1,8 @@
 import { ApiCheck, AssertionBuilder } from 'checkly/constructs'
 import { BASE_URL } from './env'
 
-// Shipping cost is calculated purely from item count
-// (src/shipping/src/shipping_service/quote.rs: create_quote_from_count),
-// not from which product it is or the address content, so a synthetic
-// placeholder item/address is safe here and doesn't depend on any real
-// catalog data.
+// Shipping cost only depends on item count, not the product or address, so
+// a placeholder item is fine here.
 const itemList = JSON.stringify([{ productId: 'checkly-synthetic-item', quantity: 1 }])
 const address = JSON.stringify({
   streetAddress: 'Unter den Linden 1',
