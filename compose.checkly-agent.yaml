@@ -1,0 +1,20 @@
+# Checkly Private Location agent layer: runs the Checkly agent alongside the
+# demo stack, on the same default network, so scheduled Checkly checks can
+# reach the app (e.g. http://frontend-proxy:8080) without exposing it
+# publicly.
+#
+# Requires a Private Location API key (create the Private Location in the
+# Checkly dashboard first, then put its key in checkly/.env.checkly.local as
+# API_KEY=pl_... — that file is gitignored and never committed. See
+# checkly/.env.checkly.local.example.
+#
+# Usage:
+#   docker compose -f compose.yaml -f compose.checkly-agent.yaml up
+
+services:
+  checkly-agent:
+    image: checkly/agent:latest
+    container_name: checkly-agent
+    restart: unless-stopped
+    env_file:
+      - checkly/.env.checkly.local
