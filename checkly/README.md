@@ -37,3 +37,28 @@ app for the Checkly Senior Solutions Architect take-home challenge. See
 
 Run `npm install` first to install dependencies (`@playwright/test`,
 `checkly`).
+
+## Running against the local demo
+
+`npx checkly test` always dispatches to a Checkly-side runner (cloud by
+default), never to your own machine — so it can't reach an app running only
+on your laptop unless you target a **Private Location** (see
+`../compose.checkly-agent.yaml`, which runs the Checkly agent alongside the
+demo stack, on the same Docker network).
+
+Bring the agent up first (from the repo root):
+
+```bash
+docker compose -f compose.yaml -f compose.checkly-agent.yaml up -d checkly-agent
+```
+
+Then, from `checkly/`, target it explicitly and point checks at the app's
+**internal Docker DNS name** (`frontend-proxy`, not `localhost` — from
+inside the agent's own container, `localhost` means the agent itself):
+
+```bash
+ENVIRONMENT_URL=http://frontend-proxy:8080 \
+  npx checkly test --private-location=opentelemetry-checkly-local --no-record
+```
+
+Verified working 2026-08-04.

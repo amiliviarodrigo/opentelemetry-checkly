@@ -11,6 +11,11 @@
 # Usage:
 #   docker compose -f compose.yaml -f compose.checkly-agent.yaml up
 
+networks:
+  default:
+    name: opentelemetry-demo
+    external: true
+
 services:
   checkly-agent:
     image: checkly/agent:latest
