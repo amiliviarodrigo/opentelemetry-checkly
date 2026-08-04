@@ -27,7 +27,9 @@ test('Complete checkout journey', async ({ page }) => {
   })
 
   await test.step('Cart shows the right product and quantity', async () => {
-    const cartRow = page.locator('section').filter({ hasText: productName })
+    // Scoped to sections with a quantity selector, so it can't match a
+    // recommended-product card that happens to share text with productName.
+    const cartRow = page.locator('section').filter({ hasText: productName }).filter({ has: page.getByRole('combobox') })
     await expect(cartRow).toBeVisible()
     await expect(cartRow.getByRole('combobox')).toHaveValue('2')
   })
@@ -49,6 +51,6 @@ test('Complete checkout journey', async ({ page }) => {
   await test.step('Order confirmation shows the right product', async () => {
     await expect(page).toHaveURL(/\/cart\/checkout\//)
     await expect(page.getByText('Your order is complete!')).toBeVisible()
-    await expect(page.getByText(productName)).toBeVisible()
+    await expect(page.getByRole('heading', { name: productName })).toBeVisible()
   })
 })
