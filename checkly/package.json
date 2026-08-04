@@ -1,0 +1,17 @@
+{
+  "name": "astronomy-shop-monitoring",
+  "version": "1.0.0",
+  "description": "Checkly monitoring-as-code for the OpenTelemetry Demo (Astronomy Shop)",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "checkly test",
+    "deploy": "checkly deploy"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1",
+    "checkly": "latest",
+    "dotenv": "^16.0.0"
+  }
+}
