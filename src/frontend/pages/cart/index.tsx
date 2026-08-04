@@ -10,6 +10,7 @@ import CartDetail from '../../components/Cart/CartDetail';
 import EmptyCart from '../../components/Cart/EmptyCart';
 import { useCart } from '../../providers/Cart.provider';
 import AdProvider from '../../providers/Ad.provider';
+import { CypressFields } from '../../utils/enums/CypressFields';
 
 const Cart: NextPage = () => {
   const {
@@ -25,7 +26,7 @@ const Cart: NextPage = () => {
         <title>Otel Demo - Cart</title>
       </Head>
       <Layout>
-        <S.Cart>
+        <S.Cart data-cy={CypressFields.CartPage}>
           {(!!items.length && <CartDetail />) || <EmptyCart />}
           <Recommendations />
         </S.Cart>
