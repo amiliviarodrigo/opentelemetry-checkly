@@ -38,12 +38,9 @@ const config = defineConfig({
         viewport: { width: 1280, height: 720 },
       }
     },
-    browserChecks: {
-      /* A glob pattern matches any Playwright .spec.ts files and automagically creates a Browser Check. This way, you
-      * can just write Playwright code. See https://www.checklyhq.com/docs/constructs/including-checks/#browserchecks-testmatch
-      * */
-      testMatch: '**/__checks__/**/*.spec.ts',
-    },
+    /* No browserChecks.testMatch glob - browser checks are created explicitly
+     * via BrowserCheck constructs (see *-browser.check.ts files), so each one
+     * gets a proper display name instead of its filename. */
   },
   cli: {
     /* The app only runs locally via the Private Location agent, so
