@@ -1,169 +1,146 @@
-<!-- markdownlint-disable-next-line -->
-# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> OpenTelemetry Demo
+# Astronomy Shop — Checkly Monitoring
 
-[![Slack](https://img.shields.io/badge/slack-@cncf/otel/demo-brightgreen.svg?logo=slack)](https://cloud-native.slack.com/archives/C03B4CWV4DA)
-[![Version](https://img.shields.io/github/v/release/open-telemetry/opentelemetry-demo?color=blueviolet)](https://github.com/open-telemetry/opentelemetry-demo/releases)
-[![Commits](https://img.shields.io/github/commits-since/open-telemetry/opentelemetry-demo/latest?color=ff69b4&include_prereleases)](https://github.com/open-telemetry/opentelemetry-demo/graphs/commit-activity)
-[![Downloads](https://img.shields.io/docker/pulls/otel/demo)](https://hub.docker.com/r/otel/demo)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?color=red)](https://github.com/open-telemetry/opentelemetry-demo/blob/main/LICENSE)
-[![Telemetry Tests](https://github.com/open-telemetry/opentelemetry-demo/actions/workflows/run-telemetry-tests.yml/badge.svg)](https://github.com/open-telemetry/opentelemetry-demo/actions/workflows/run-telemetry-tests.yml)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/opentelemetry-demo)](https://artifacthub.io/packages/helm/opentelemetry-helm/opentelemetry-demo)
-[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B162%2Fgithub.com%2Fopen-telemetry%2Fopentelemetry-demo.svg?type=shield&issueType=license)](https://app.fossa.com/projects/custom%2B162%2Fgithub.com%2Fopen-telemetry%2Fopentelemetry-demo?ref=badge_shield&issueType=license)
-[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B162%2Fgithub.com%2Fopen-telemetry%2Fopentelemetry-demo.svg?type=shield&issueType=security)](https://app.fossa.com/projects/custom%2B162%2Fgithub.com%2Fopen-telemetry%2Fopentelemetry-demo?ref=badge_shield&issueType=security)
-[![OpenSSF Scorecard for opentelemetry-demo](https://api.scorecard.dev/projects/github.com/open-telemetry/opentelemetry-demo/badge)](https://scorecard.dev/viewer/?uri=github.com/open-telemetry/opentelemetry-demo)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9247/badge)](https://www.bestpractices.dev/en/projects/9247)
+This repository is the OpenTelemetry Demo ("Astronomy Shop"), a telescope
+e-commerce storefront, used as the target application for a Checkly
+Solutions Architect take-home exercise. The `checkly/` directory contains
+the actual deliverable: a Checkly monitoring-as-code project built against
+this app.
 
-## Welcome to the OpenTelemetry Astronomy Shop Demo
+## Introduction
 
-This repository contains the OpenTelemetry Astronomy Shop, a microservice-based
-distributed system intended to illustrate the implementation of OpenTelemetry in
-a near real-world environment.
+The scenario: a prospect runs this e-commerce platform. They already have a
+traditional observability stack (metrics, logs, traces) but no synthetic
+monitoring, and they've had incidents where customers noticed problems
+before their own internal alerting did.
 
-Our goals are threefold:
+Rather than trying to monitor the entire application, this project focuses
+on the **critical path** — the sequence of actions a customer takes that
+directly generates revenue: browsing products, viewing a product, adding it
+to a cart, and checking out. That's the flow most worth protecting, and the
+one most representative of "is the business actually working right now."
 
-- Provide a realistic example of a distributed system that can be used to
-  demonstrate OpenTelemetry instrumentation and observability.
-- Build a base for vendors, tooling authors, and others to extend and
-  demonstrate their OpenTelemetry integrations.
-- Create a living example for OpenTelemetry contributors to use for testing new
-  versions of the API, SDK, and other components or enhancements.
+The approach mixes two check types:
 
-We've already made [huge
-progress](https://github.com/open-telemetry/opentelemetry-demo/blob/main/CHANGELOG.md),
-and development is ongoing. We hope to represent the full feature set of
-OpenTelemetry across its languages in the future.
+- **REST API checks** against the app's own frontend routes, for fast,
+  frequent, granular triage — when something breaks, these narrow down
+  which part of the system is responsible.
+- **User journey checks**, driving a real browser through the app the way
+  an actual customer would, to catch anything an API-level check can't
+  (broken pages, JS errors, a flow that technically returns 200s at every
+  step but doesn't actually work end to end).
 
-If you'd like to help (**which we would love**), check out our [contributing
-guidance](./CONTRIBUTING.md).
+The underlying codebase is intentionally large and polyglot — over a dozen
+microservices in different languages (Go, C#, C++, Rust, Node.js,
+Java/Kotlin, PHP, Ruby), communicating over gRPC, HTTP, and Kafka. Covering
+all of it isn't the goal here; the checks below cover the checkout critical
+path deliberately and thoroughly, which is sufficient to demonstrate the
+approach for this exercise.
 
-If you'd like to extend this demo or maintain a fork of it, read our
-[fork guidance](https://opentelemetry.io/docs/demo/forking/).
+## Testing Coverage
 
-## Quick start
+The critical path, as an actual customer walks it:
 
-You can be up and running with the demo in a few minutes. Check out the docs for
-your preferred deployment method:
+**Browse (PLP) → View product (PDP) → Add to cart → View cart → Checkout → Order confirmation**
 
-- [Docker](https://opentelemetry.io/docs/demo/docker_deployment/)
-- [Kubernetes](https://opentelemetry.io/docs/demo/kubernetes_deployment/)
+Checkout itself is the most consequential single step — placing an order
+fans out into a specific sequence of calls across five different services
+before the customer sees a confirmation:
 
-## Documentation
+1. **Cart** — get the cart's contents
+2. **Product Catalog** — price each item
+3. **Currency** — convert each item's price to the customer's currency
+4. **Shipping** — get a shipping cost quote
+5. **Currency** — convert the shipping cost
+6. **Payment** — charge the card
+7. **Shipping** — ship the order, get a tracking ID
+8. **Cart** — empty the cart
 
-For detailed documentation, see [Demo Documentation][docs]. If you're curious
-about a specific feature, the [docs landing page][docs] can point you in the
-right direction.
+For the full system architecture (all services, not just the ones on this
+critical path), see the [official diagram](https://opentelemetry.io/docs/demo/architecture/).
 
-## Demos featuring the Astronomy Shop
+### Steps → services → routes
 
-We welcome any vendor to fork the project to demonstrate their services and
-adding a link below. The community is committed to maintaining the project and
-keeping it up to date for you.
+| Step | Microservice(s) involved | Route |
+|---|---|---|
+| Browse products (PLP) | Product Catalog | `GET /api/products` |
+| View product (PDP) | Product Catalog | `GET /api/products/{id}` |
+| Add item to cart | Cart | `POST /api/cart` |
+| View cart | Cart, Product Catalog | `GET /api/cart` |
+| Live shipping estimate | Shipping, Currency | `GET /api/shipping` |
+| Place order | Cart, Product Catalog, Currency, Shipping, Payment | `POST /api/checkout` |
 
-|                           |                |                                  |
-|---------------------------|----------------|----------------------------------|
-| [AlibabaCloud LogService] | [Elastic]      | [Oracle]                         |
-| [Amazon Web Services]     | [Google Cloud] | [Parseable]                      |
-| [Apache Doris]            | [Grafana Labs] | [Sentry]                         |
-| [AppDynamics]             | [Guance]       | [ServiceNow Cloud Observability] |
-| [Aspecto]                 | [Honeycomb.io] | [SigNoz]                         |
-| [Axiom]                   | [Instana]      | [SolarWinds Observability]       |
-| [Axoflow]                 | [Kloudfuse]    | [Splunk]                         |
-| [Azure Data Explorer]     | [Kopai]        | [Sumo Logic]                     |
-| [Bronto]                  | [Last9]        | [TelemetryHub]                   |
-| [Causely]                 | [Liatrio]      | [Teletrace]                      |
-| [ClickStack]              | [Logz.io]      | [Tinybird]                       |
-| [Coralogix]               | [New Relic]    | [Tracetest]                      |
-| [Dash0]                   | [Oodle]        | [Tsuga]                          |
-| [Datadog]                 | [OpenObserve]  | [Uptrace]                        |
-| [Dynatrace]               | [OpenSearch]   | [VictoriaMetrics]                |
+### Checks implemented
 
-## Contributing
+| Check | Type | Verifies |
+|---|---|---|
+| Products API | API | Product Catalog is reachable and returns products |
+| Cart API | API | Cart is reachable, returns a well-formed response |
+| Cart API - Add Item | API | Cart's write path actually adds an item |
+| Currency API | API | Currency service is reachable |
+| Shipping API | API | Shipping quote calculation works |
+| Checkout API | API | The full critical path succeeds end to end — places a real order |
+| Homepage | Browser | The product listing page loads |
+| Product Detail Page | Browser | A product page loads with all its content |
+| Cart Page | Browser | The cart page loads |
+| Checkout Journey | Browser | The full 8-step customer journey, including a real checkout |
 
-To get involved with the project see our [CONTRIBUTING](CONTRIBUTING.md)
-documentation. Our [SIG Calls](CONTRIBUTING.md#join-a-sig-call) are every other
-Wednesday at 8:30 AM PST and anyone is welcome.
+## Scaffolding
 
-### Maintainers
+```
+checkly/
+├── __checks__/
+│   ├── cart/
+│   ├── checkout/
+│   ├── currency/
+│   ├── product-catalog/
+│   ├── shipping/
+│   ├── frontend/
+│   └── env.ts
+├── checkly.config.ts
+├── package.json
+└── README.md
+```
 
-- [Cyrille Le Clerc](https://github.com/cyrille-leclerc), Datadog
-- [Juliano Costa](https://github.com/julianocosta89), Datadog
-- [Shenoy Pratik](https://github.com/ps48), AWS OpenSearch
+Each folder under `__checks__/` is named after what it tests — API checks
+live in their corresponding microservice's folder, browser checks live in
+`frontend/`.
 
-For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
+## Execution Environment
 
-### Approvers
+This app only runs locally via Docker Compose — it isn't deployed anywhere
+public. Checkly's own cloud runners can't reach `localhost`, so checks run
+from a **Private Location**: a small agent that runs alongside the app, on
+the same Docker network, and executes checks on Checkly's behalf.
 
-- [D&#xF3;nal O'Sullivan](https://github.com/osullivandonal), Elastic
-- [Piotr Kie&#x142;kowicz](https://github.com/Kielek), Splunk
+### Running the app
 
-For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
+From the repo root:
 
-### Emeritus
+```bash
+docker compose up
+```
 
-- [Austin Parker](https://github.com/austinlparker), Maintainer
-- [Carter Socha](https://github.com/cartersocha), Maintainer
-- [Cedric Ziel](https://github.com/cedricziel), Approver
-- [Michael Maxwell](https://github.com/mic-max), Approver
-- [Mikko Viitanen](https://github.com/mviitane), Maintainer
-- [Morgan McLean](https://github.com/mtwo), Approver
-- [Penghan Wang](https://github.com/wph95), Approver
-- [Pierre Tessier](https://github.com/puckpuck), Maintainer
-- [Reiley Yang](https://github.com/reyang), Approver
-- [Roger Coll](https://github.com/rogercoll), Maintainer
-- [Ziqi Zhao](https://github.com/fatsheep9146), Approver
+The storefront is then available at `http://localhost:8080`.
 
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
+### Running the Private Location agent
 
-### Thanks to all the people who have contributed
+Requires a Private Location created in the Checkly dashboard first, with
+its API key placed in `checkly/.env.checkly.local` (gitignored, copy
+`checkly/.env.checkly.local.example` as a starting point):
 
-[![contributors](https://contributors-img.web.app/image?repo=open-telemetry/opentelemetry-demo)](https://github.com/open-telemetry/opentelemetry-demo/graphs/contributors)
+```bash
+docker compose -f compose.yaml -f compose.checkly-agent.yaml up -d checkly-agent
+```
 
-[docs]: https://opentelemetry.io/docs/demo/
+### Running checks against it
 
-<!-- Links for Demos featuring the Astronomy Shop section -->
+From `checkly/`, point checks at the app's internal Docker DNS name
+(`frontend-proxy`, not `localhost` — from inside the agent's own container,
+`localhost` means the agent itself):
 
-[AlibabaCloud LogService]: https://github.com/aliyun-sls/opentelemetry-demo
-[Amazon Web Services]: https://github.com/aws-observability/observability-best-practices/blob/main/sandbox/otel-demo-thegame/README.md
-[AppDynamics]: https://community.splunk.com/t5/AppDynamics-Knowledge-Base/How-to-observe-Kubernetes-deployment-of-OpenTelemetry-demo-app/ta-p/741454
-[Apache Doris]: https://github.com/apache/doris-opentelemetry-demo
-[Aspecto]: https://github.com/aspecto-io/opentelemetry-demo
-[Axiom]: https://play.axiom.co/axiom-play-qf1k/dashboards/otel.traces.otel-demo-traces
-[Axoflow]: https://axoflow.com/opentelemetry-support-in-more-detail-in-axosyslog-and-syslog-ng/
-[Azure Data Explorer]: https://github.com/Azure/Azure-kusto-opentelemetry-demo
-[Bronto]: https://docs.bronto.io/getting-started/otel-demo
-[Causely]: https://github.com/causely-oss/otel-demo
-[ClickStack]: https://github.com/ClickHouse/opentelemetry-demo
-[Coralogix]: https://coralogix.com/blog/configure-otel-demo-send-telemetry-data-coralogix
-[Dash0]: https://github.com/dash0hq/opentelemetry-demo
-[Datadog]: https://docs.datadoghq.com/opentelemetry/guide/otel_demo_to_datadog
-[Dynatrace]: https://www.dynatrace.com/news/blog/opentelemetry-demo-application-with-dynatrace/
-[Elastic]: https://github.com/elastic/opentelemetry-demo
-[Google Cloud]: https://github.com/GoogleCloudPlatform/opentelemetry-demo
-[Grafana Labs]: https://github.com/grafana/opentelemetry-demo
-[Guance]: https://github.com/GuanceCloud/opentelemetry-demo
-[Honeycomb.io]: https://github.com/honeycombio/opentelemetry-demo
-[Instana]: https://github.com/instana/opentelemetry-demo
-[Kloudfuse]: https://github.com/kloudfuse/opentelemetry-demo
-[Kopai]: https://github.com/kopai-app/opentelemetry-demo/tree/main/kopai
-[Last9]: https://last9.io/docs/integrations-opentelemetry-demo/
-[Liatrio]: https://github.com/liatrio/opentelemetry-demo
-[Logz.io]: https://logz.io/learn/how-to-run-opentelemetry-demo-with-logz-io/
-[New Relic]: https://github.com/newrelic/opentelemetry-demo
-[Oodle]: https://blog.oodle.ai/meet-oodle-unified-and-ai-native-observability/
-[OpenSearch]: https://github.com/opensearch-project/opentelemetry-demo
-[OpenObserve]: https://openobserve.ai/blog/opentelemetry-astronomy-shop-demo/
-[Oracle]: https://github.com/oracle-quickstart/oci-o11y-solutions/blob/main/knowledge-content/opentelemetry-demo
-[Parseable]: https://www.parseable.com/blog/open-telemetry-demo-with-parseable-a-complete-observability-setup
-[Sentry]: https://github.com/getsentry/opentelemetry-demo
-[ServiceNow Cloud Observability]: https://docs.lightstep.com/otel/quick-start-operator#send-data-from-the-opentelemetry-demo
-[SigNoz]: https://signoz.io/blog/opentelemetry-demo/
-[SolarWinds Observability]: https://github.com/solarwinds/opentelemetry-demo
-[Splunk]: https://github.com/signalfx/opentelemetry-demo
-[Sumo Logic]: https://www.sumologic.com/blog/common-opentelemetry-demo-application/
-[TelemetryHub]: https://github.com/TelemetryHub/opentelemetry-demo/tree/telemetryhub-backend
-[Teletrace]: https://github.com/teletrace/opentelemetry-demo
-[Tinybird]: https://github.com/tinybirdco/opentelemetry-demo
-[Tracetest]: https://github.com/kubeshop/opentelemetry-demo
-[Tsuga]: https://github.com/tsuga-dev/opentelemetry-demo
-[Uptrace]: https://github.com/uptrace/uptrace/tree/master/example/opentelemetry-demo
-[VictoriaMetrics]: https://github.com/VictoriaMetrics-Community/opentelemetry-demo
+```bash
+ENVIRONMENT_URL=http://frontend-proxy:8080 \
+  npx checkly test --private-location=<your-private-location-name>
+```
+
+See `checkly/README.md` for the full CLI reference and deploy instructions.
